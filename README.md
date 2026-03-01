@@ -8,6 +8,7 @@ Google Photos that never leaves your house.
 
 ## What it does
 
+- Premium dark UI — indigo accent, glass topbars, smooth transitions, inline SVG icons
 - Upload photos and videos from your phone or laptop via a browser
 - Browse your gallery with thumbnails, infinite scroll, and date grouping (Today / Yesterday / Month / Year)
 - Fullscreen viewer with swipe navigation (mobile) and keyboard shortcuts (desktop)
@@ -46,6 +47,8 @@ NAS/
 │       ├── gallery/     # Gallery home, viewer, trash, upload, photo-grid
 │       ├── shared/      # Shared models + confirm-dialog component
 │       └── core/        # ApiService, AuthService, auth guard
+├── agents/              # Standalone agent scripts
+│   └── designer_agent.py  # UI/UX redesign agent (Anthropic SDK)
 ├── requirements.txt     # Python dependencies
 ├── CLAUDE.md            # Agent rules (commit style, doc policy)
 └── .gitignore
