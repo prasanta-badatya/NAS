@@ -1,55 +1,96 @@
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(4, 4, 12, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 2000;
+  animation: fadeIn 0.15s var(--ease);
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+// ── Dialog ────────────────────────────────────────────────────────────────────
 .dialog {
-  background: #1e1e1e;
-  border: 1px solid #333;
-  border-radius: 12px;
-  padding: 1.75rem 2rem;
+  background: var(--s2);
+  border: 1px solid var(--b2);
+  border-radius: var(--r-lg);
+  padding: 2rem 1.75rem 1.75rem;
   max-width: 360px;
-  width: 90%;
+  width: calc(100% - 2rem);
   text-align: center;
+  box-shadow: var(--sh3);
+  animation: slideUp 0.2s var(--ease);
 }
 
+@keyframes slideUp {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+// ── Warning icon ──────────────────────────────────────────────────────────────
+.dialog-icon {
+  width: 48px;
+  height: 48px;
+  background: var(--err-dim);
+  border: 1px solid rgba(239,68,68,0.2);
+  border-radius: 50%;
+  margin: 0 auto 1.25rem;
+  color: #fca5a5;
+  svg { width: 22px; height: 22px; }
+}
+
+// ── Message ───────────────────────────────────────────────────────────────────
 .message {
-  color: #e0e0e0;
-  font-size: 1rem;
-  line-height: 1.5;
-  margin-bottom: 1.5rem;
+  color: var(--t1);
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.55;
+  margin-bottom: 1.75rem;
 }
 
+// ── Buttons ───────────────────────────────────────────────────────────────────
 .actions {
   display: flex;
-  gap: 0.75rem;
-  justify-content: center;
+  gap: 0.6rem;
 
   button {
     flex: 1;
-    padding: 0.6rem 1.25rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 0.95rem;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--b1);
+    border-radius: var(--r-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
     cursor: pointer;
-    font-weight: 500;
-    transition: background 0.15s;
+    transition: all 0.18s var(--ease);
   }
 }
 
 .btn-cancel {
-  background: #2a2a2a;
-  color: #aaa;
-  &:hover { background: #333; }
+  background: var(--s3);
+  border-color: var(--b1);
+  color: var(--t2);
+
+  &:hover { background: var(--s3); border-color: var(--b2); color: var(--t1); }
 }
 
 .btn-confirm {
-  background: #c0392b;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border-color: transparent;
   color: #fff;
-  &:hover { background: #e74c3c; }
+  box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+
+  &:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(239,68,68,0.4);
+  }
+  &:active { transform: translateY(0); }
 }

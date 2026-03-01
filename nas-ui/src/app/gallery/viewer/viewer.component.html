@@ -2,40 +2,73 @@
      (touchstart)="onTouchStart($event)"
      (touchend)="onTouchEnd($event)">
 
-  <!-- Top bar -->
+  <!-- ── Top bar ──────────────────────────────────────────────────────────── -->
   <div class="viewer-topbar">
-    <button class="btn-icon" (click)="close()" title="Close (Esc)">✕</button>
-    <span class="counter">{{ currentIndex + 1 }} / {{ photos.length }}</span>
+    <button class="vbtn" (click)="close()" title="Close (Esc)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <span class="counter">{{ currentIndex + 1 }} <span class="counter-sep">/</span> {{ photos.length }}</span>
+
     <div class="top-actions">
-      <button class="btn-icon" (click)="toggleInfo()" title="Info (I)">ℹ</button>
-      <button class="btn-icon" (click)="download()" title="Download">⬇</button>
-      <button class="btn-icon btn-delete" (click)="confirmDelete()" title="Move to Trash">🗑</button>
+      <button class="vbtn" [class.active]="showInfo" (click)="toggleInfo()" title="Info (I)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="16" x2="12" y2="12"/>
+          <line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </button>
+      <button class="vbtn" (click)="download()" title="Download">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
+      <button class="vbtn vbtn-danger" (click)="confirmDelete()" title="Move to Trash">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      </button>
     </div>
   </div>
 
-  <!-- Image -->
+  <!-- ── Image stage ──────────────────────────────────────────────────────── -->
   <div class="viewer-stage" (click)="close()">
     <img [src]="current.url" [alt]="current.filename" (click)="$event.stopPropagation()" />
   </div>
 
-  <!-- Prev / Next arrows -->
-  <button class="nav-btn nav-prev" *ngIf="hasPrev" (click)="prev()">‹</button>
-  <button class="nav-btn nav-next" *ngIf="hasNext" (click)="next()">›</button>
+  <!-- ── Nav arrows ───────────────────────────────────────────────────────── -->
+  <button class="nav-btn nav-prev" *ngIf="hasPrev" (click)="prev()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="15 18 9 12 15 6"/>
+    </svg>
+  </button>
+  <button class="nav-btn nav-next" *ngIf="hasNext" (click)="next()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="9 18 15 12 9 6"/>
+    </svg>
+  </button>
 
-  <!-- Info panel -->
+  <!-- ── Info panel ───────────────────────────────────────────────────────── -->
   <div class="info-panel" *ngIf="showInfo" (click)="$event.stopPropagation()">
-    <div class="info-row"><span class="label">Filename</span><span>{{ current.filename }}</span></div>
-    <div class="info-row"><span class="label">Size</span><span>{{ formatSize(current.file_size) }}</span></div>
-    <div class="info-row"><span class="label">Type</span><span>{{ current.mime_type }}</span></div>
-    <div class="info-row"><span class="label">Taken</span><span>{{ formatDate(current.taken_at) }}</span></div>
-    <div class="info-row"><span class="label">Uploaded</span><span>{{ formatDate(current.uploaded_at) }}</span></div>
+    <div class="info-row"><span class="label">Filename</span><span class="value">{{ current.filename }}</span></div>
+    <div class="info-row"><span class="label">Size</span><span class="value">{{ formatSize(current.file_size) }}</span></div>
+    <div class="info-row"><span class="label">Type</span><span class="value">{{ current.mime_type }}</span></div>
+    <div class="info-row"><span class="label">Taken</span><span class="value">{{ formatDate(current.taken_at) }}</span></div>
+    <div class="info-row"><span class="label">Uploaded</span><span class="value">{{ formatDate(current.uploaded_at) }}</span></div>
     <div class="info-row" *ngIf="current.device_source">
-      <span class="label">Device</span><span class="device">{{ current.device_source }}</span>
+      <span class="label">Device</span><span class="value device">{{ current.device_source }}</span>
     </div>
   </div>
+
 </div>
 
-<!-- Delete confirmation -->
+<!-- ── Delete confirmation ─────────────────────────────────────────────────── -->
 <app-confirm-dialog
   *ngIf="showConfirm"
   message="Move this photo to Trash?"

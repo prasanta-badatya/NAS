@@ -1,21 +1,45 @@
+// ── Drop zone ─────────────────────────────────────────────────────────────────
 .drop-zone {
-  border: 2px dashed #333;
-  border-radius: 12px;
-  padding: 2rem 1.5rem;
+  border: 1.5px dashed var(--b2);
+  border-radius: var(--r-lg);
+  padding: 2.5rem 1.5rem;
   text-align: center;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color 0.2s var(--ease), background 0.2s var(--ease);
+  background: transparent;
 
   &.dragging, &:hover {
-    border-color: #4f8ef7;
-    background: rgba(79, 142, 247, 0.06);
+    border-color: var(--a);
+    background: var(--a-dim);
+
+    .upload-icon { color: var(--a-h); border-color: rgba(99,102,241,0.3); }
   }
 }
 
-.drop-content {
-  .icon { font-size: 2.2rem; display: block; margin-bottom: 0.5rem; color: #555; }
-  p { color: #ccc; font-size: 0.95rem; margin-bottom: 0.25rem; }
-  small { color: #555; font-size: 0.8rem; }
+.drop-content { pointer-events: none; }
+
+.upload-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  background: var(--s2);
+  border: 1px solid var(--b1);
+  border-radius: var(--r-md);
+  color: var(--t3);
+  transition: color 0.2s var(--ease), border-color 0.2s var(--ease);
+  svg { width: 26px; height: 26px; }
+}
+
+.drop-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--t2);
+  margin-bottom: 0.35rem;
+}
+
+.drop-sub {
+  font-size: 0.8rem;
+  color: var(--t3);
 }
 
 // ── Queue ─────────────────────────────────────────────────────────────────────
@@ -23,33 +47,39 @@
   margin-top: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .queue-item {
-  background: #1e1e1e;
-  border-radius: 8px;
-  padding: 0.6rem 0.75rem;
-  border-left: 3px solid #333;
+  background: var(--s2);
+  border-radius: var(--r-sm);
+  padding: 0.65rem 0.85rem;
+  border-left: 3px solid var(--b1);
+  transition: border-color 0.2s var(--ease);
 
-  &.done      { border-color: #27ae60; }
-  &.duplicate { border-color: #f39c12; }
-  &.error     { border-color: #c0392b; }
-  &.uploading { border-color: #4f8ef7; }
+  &.done      { border-color: var(--ok); }
+  &.duplicate { border-color: var(--warn); }
+  &.error     { border-color: var(--err); }
+  &.uploading { border-color: var(--a); }
 }
 
 .item-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
 
-.status-icon { font-size: 0.9rem; flex-shrink: 0; width: 18px; text-align: center; }
+.status-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  svg { width: 16px; height: 16px; }
+}
 
 .filename {
   flex: 1;
   font-size: 0.82rem;
-  color: #ccc;
+  color: var(--t2);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -57,28 +87,30 @@
 
 .badge {
   font-size: 0.72rem;
-  color: #666;
+  font-weight: 500;
+  color: var(--t3);
   flex-shrink: 0;
+  letter-spacing: 0.02em;
 }
 
-// ── Progress bar ──────────────────────────────────────────────────────────────
+// ── Progress ──────────────────────────────────────────────────────────────────
 .progress-track {
   height: 3px;
-  background: #2a2a2a;
+  background: var(--s3);
   border-radius: 2px;
-  margin-top: 0.4rem;
+  margin-top: 0.5rem;
   overflow: hidden;
 }
 
 .progress-bar {
   height: 100%;
-  background: #4f8ef7;
+  background: linear-gradient(90deg, var(--a), var(--a-h));
   border-radius: 2px;
-  transition: width 0.2s ease;
+  transition: width 0.25s var(--ease);
 }
 
 .error-msg {
   font-size: 0.75rem;
-  color: #e07070;
-  margin-top: 0.25rem;
+  color: #fca5a5;
+  margin-top: 0.3rem;
 }
