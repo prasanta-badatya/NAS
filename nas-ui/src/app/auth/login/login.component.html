@@ -1,0 +1,25 @@
+<div class="login-page">
+  <div class="login-card">
+    <div class="logo">📷 Private NAS</div>
+    <h2>Sign In</h2>
+
+    <div class="error" *ngIf="error">{{ error }}</div>
+
+    <input
+      type="text"
+      placeholder="Username"
+      [(ngModel)]="username"
+      (keyup.enter)="login()"
+    />
+    <input
+      type="password"
+      placeholder="Password"
+      [(ngModel)]="password"
+      (keyup.enter)="login()"
+    />
+
+    <button (click)="login()" [disabled]="loading">
+      {{ loading ? 'Signing in…' : 'Sign In' }}
+    </button>
+  </div>
+</div>

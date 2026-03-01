@@ -1,0 +1,24 @@
+<div class="grid">
+  <div class="tile" *ngFor="let p of photos" (click)="open(p)">
+    <img [src]="p.thumbnail_url || p.url" [alt]="p.filename" loading="lazy" />
+  </div>
+</div>
+
+<div class="empty" *ngIf="photos.length === 0">
+  No photos yet. Upload some!
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" *ngIf="lightbox" (click)="close()">
+  <div class="lb-content" (click)="$event.stopPropagation()">
+    <img [src]="lightbox.url" [alt]="lightbox.filename" />
+    <div class="lb-info">
+      <span>{{ lightbox.filename }}</span>
+      <span class="date">{{ lightbox.uploaded_at | date:'mediumDate' }}</span>
+    </div>
+    <div class="lb-actions">
+      <button class="del" (click)="delete(lightbox.id)">Delete</button>
+      <button (click)="close()">Close</button>
+    </div>
+  </div>
+</div>

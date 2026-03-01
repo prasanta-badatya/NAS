@@ -1,0 +1,23 @@
+<div
+  class="drop-zone"
+  [class.dragging]="dragging"
+  (dragover)="$event.preventDefault(); dragging=true"
+  (dragleave)="dragging=false"
+  (drop)="onDrop($event)"
+>
+  <input type="file" #fileInput multiple accept="image/*,video/*" (change)="onFileSelect($event)" hidden />
+
+  <div class="drop-content" (click)="fileInput.click()">
+    <span class="icon">☁️</span>
+    <p>Drag & drop photos here<br /><small>or tap to select</small></p>
+  </div>
+
+  <div class="uploading" *ngIf="uploading">Uploading…</div>
+</div>
+
+<div class="results" *ngIf="results.length">
+  <div *ngFor="let r of results" class="result-row" [class.duplicate]="r.status==='duplicate'" [class.error]="r.status==='error'">
+    <span>{{ r.status === 'uploaded' ? '✓' : r.status === 'duplicate' ? '=' : '✗' }}</span>
+    {{ r.filename }} — {{ r.status }}
+  </div>
+</div>

@@ -1,0 +1,28 @@
+<div class="shell">
+  <!-- Topbar -->
+  <header>
+    <span class="brand">📷 Private NAS</span>
+    <div class="actions">
+      <button class="upload-btn" (click)="showUpload = !showUpload">
+        {{ showUpload ? 'Cancel' : '+ Upload' }}
+      </button>
+      <span class="user-info" *ngIf="user">{{ user.username }}</span>
+      <button class="logout-btn" (click)="logout()">Logout</button>
+    </div>
+  </header>
+
+  <!-- Upload panel -->
+  <div class="upload-panel" *ngIf="showUpload">
+    <app-upload (uploaded)="onUploaded()"></app-upload>
+  </div>
+
+  <!-- Gallery -->
+  <main>
+    <div class="loading" *ngIf="loading">Loading photos…</div>
+    <app-photo-grid
+      *ngIf="!loading"
+      [photos]="photos"
+      (deleted)="onDeleted($event)"
+    ></app-photo-grid>
+  </main>
+</div>
