@@ -88,6 +88,17 @@ it over Wi-Fi.  Using `127.0.0.1` would lock it to localhost only.
 
 ### Start the frontend
 
+Before starting, set your PC's local IP in `nas-ui/src/environments/environment.ts`:
+
+```ts
+export const environment = {
+  production: false,
+  apiUrl: 'http://192.168.x.x:8000/api'   // ← your PC's IP here
+};
+```
+
+Then run:
+
 ```bash
 cd nas-ui
 ng serve --host 0.0.0.0
@@ -98,10 +109,10 @@ The UI is then available at:
 | Device  | URL                          |
 |---------|------------------------------|
 | Laptop  | http://localhost:4200        |
-| Phone   | http://192.168.1.35:4200     |
+| Phone   | http://192.168.x.x:4200      |
 
-> Change `192.168.1.35` to your actual PC IP.  Find it with `ipconfig` (Windows)
-> or `ip a` (Linux/Mac).
+> Replace `192.168.x.x` with your PC's actual local IP.
+> Find it with `ipconfig` on Windows or `ip a` on Linux/Mac.
 
 ---
 
@@ -166,8 +177,8 @@ things to change:
 ```bash
 DJANGO_SECRET_KEY=your-secret-key-here
 DJANGO_DEBUG=False
-DJANGO_ALLOWED_HOSTS=192.168.1.35,localhost
-CORS_ALLOWED_ORIGINS=http://192.168.1.35:4200
+DJANGO_ALLOWED_HOSTS=192.168.x.x,localhost
+CORS_ALLOWED_ORIGINS=http://192.168.x.x:4200
 ```
 
 ---

@@ -14,10 +14,11 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-# Local LAN only — list your laptop's IP and localhost
+# Add your PC's LAN IP via the env var, e.g.:
+#   DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,192.168.x.x
 ALLOWED_HOSTS = os.environ.get(
     "DJANGO_ALLOWED_HOSTS",
-    "localhost,127.0.0.1,192.168.1.35"
+    "localhost,127.0.0.1"
 ).split(",")
 
 # ── Applications ───────────────────────────────────────────────────────────
@@ -57,9 +58,11 @@ REST_FRAMEWORK = {
 }
 
 # ── CORS — restrict to Angular dev server only ─────────────────────────────
+# Add your LAN origin via env var, e.g.:
+#   CORS_ALLOWED_ORIGINS=http://localhost:4200,http://192.168.x.x:4200
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:4200,http://192.168.1.35:4200"
+    "http://localhost:4200"
 ).split(",")
 
 # ── Upload limits ──────────────────────────────────────────────────────────
