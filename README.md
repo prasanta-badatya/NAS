@@ -9,8 +9,12 @@ Google Photos that never leaves your house.
 ## What it does
 
 - Upload photos and videos from your phone or laptop via a browser
-- Browse your gallery with thumbnails, full-size view, and delete
-- Every file is deduplicated (same photo won't be stored twice)
+- Browse your gallery with thumbnails, infinite scroll, and date grouping (Today / Yesterday / Month / Year)
+- Fullscreen viewer with swipe navigation (mobile) and keyboard shortcuts (desktop)
+- Multi-select mode — long-press a photo on mobile, or enter select mode to bulk-delete or bulk-download as ZIP
+- Soft-delete with Trash — deleted photos move to Trash and can be restored or permanently removed
+- Per-file upload progress bars with duplicate detection
+- Every file is deduplicated by SHA-256 hash (same photo won't be stored twice)
 - Thumbnails are generated automatically on upload
 - Works on LAN — phone and PC must be on the same Wi-Fi
 
@@ -21,7 +25,7 @@ Google Photos that never leaves your house.
 | Layer    | Technology                        |
 |----------|-----------------------------------|
 | Backend  | Python 3.11 + Django 5 + DRF      |
-| Frontend | Angular 17 (TypeScript)           |
+| Frontend | Angular 16 (TypeScript)           |
 | Database | SQLite (local, single file)       |
 | Storage  | Local filesystem (`NAS_STORAGE/`) |
 | Auth     | DRF Token Authentication          |
@@ -34,15 +38,16 @@ Google Photos that never leaves your house.
 NAS/
 ├── nas_server/          # Django project
 │   ├── accounts/        # User registration, login, logout
-│   ├── media_manager/   # Upload, storage, gallery API
-│   ├── brain/           # Agent architecture (events + memory)
+│   ├── media_manager/   # Upload, storage, gallery API, trash
 │   └── nas_server/      # Django settings and URL routing
 ├── nas-ui/              # Angular frontend
 │   └── src/app/
 │       ├── auth/        # Login page
-│       ├── gallery/     # Gallery, upload, photo grid
-│       └── core/        # API service, auth service, guard
+│       ├── gallery/     # Gallery home, viewer, trash, upload, photo-grid
+│       ├── shared/      # Shared models + confirm-dialog component
+│       └── core/        # ApiService, AuthService, auth guard
 ├── requirements.txt     # Python dependencies
+├── CLAUDE.md            # Agent rules (commit style, doc policy)
 └── .gitignore
 ```
 
@@ -69,7 +74,7 @@ python manage.py createsuperuser   # optional admin account
 
 ```bash
 cd nas-ui
-npm install        # or: pnpm install
+npm install
 ```
 
 ---
@@ -134,24 +139,28 @@ Base URL: `http://<your-pc-ip>:8000`
 
 ### Auth  (`/api/auth/`)
 
-| Method | Path              | Auth? | Description              |
-|--------|-------------------|-------|--------------------------|
-| POST   | `/register/`      | No    | Create account           |
+| Method | Path              | Auth? | Description                 |
+|--------|-------------------|-------|-----------------------------|
+| POST   | `/register/`      | No    | Create account              |
 | POST   | `/login/`         | No    | Returns token (5/min limit) |
-| POST   | `/logout/`        | Yes   | Deletes token            |
-| GET    | `/profile/`       | Yes   | Current user info        |
+| POST   | `/logout/`        | Yes   | Deletes token               |
+| GET    | `/profile/`       | Yes   | Current user info           |
 
 ### Media  (`/api/media/`)
 
-| Method | Path                  | Auth?       | Description                  |
-|--------|-----------------------|-------------|------------------------------|
-| POST   | `/upload/`            | Yes         | Upload one or more files     |
-| GET    | `/`                   | Yes         | Paginated list of your files |
-| GET    | `/<id>/`              | Yes         | Single file details          |
-| DELETE | `/<id>/`              | Yes         | Delete file + thumbnail      |
-| GET    | `/<id>/serve/`        | token param | Serve full-size file         |
-| GET    | `/<id>/thumbnail/`    | token param | Serve thumbnail              |
-| GET    | `/history/`           | Yes         | Upload history log           |
+| Method | Path                    | Auth?       | Description                             |
+|--------|-------------------------|-------------|-----------------------------------------|
+| POST   | `/upload/`              | Yes         | Upload one or more files                |
+| GET    | `/`                     | Yes         | Paginated list (excludes trashed files) |
+| GET    | `/<id>/`                | Yes         | Single file details                     |
+| DELETE | `/<id>/`                | Yes         | Soft-delete (moves to Trash)            |
+| GET    | `/<id>/serve/`          | token param | Serve full-size file                    |
+| GET    | `/<id>/thumbnail/`      | token param | Serve thumbnail                         |
+| GET    | `/history/`             | Yes         | Upload history log                      |
+| GET    | `/trash/`               | Yes         | Paginated list of trashed files         |
+| POST   | `/<id>/restore/`        | Yes         | Restore file from Trash                 |
+| DELETE | `/<id>/permanent/`      | Yes         | Permanently delete file from disk + DB  |
+| POST   | `/batch-download/`      | Yes         | Download multiple files as a ZIP        |
 
 **Why `token param`?**  Browser `<img src>` tags cannot send Authorization
 headers.  The serve and thumbnail endpoints accept a `?token=` query parameter
@@ -164,13 +173,13 @@ as an alternative so images display correctly in the gallery.
 All settings live in `nas_server/nas_server/settings.py`.  The most common
 things to change:
 
-| Setting              | What it does                               | How to change           |
-|----------------------|--------------------------------------------|-------------------------|
-| `ALLOWED_HOSTS`      | IPs Django accepts requests from           | Env var or edit directly |
-| `CORS_ALLOWED_ORIGINS` | Origins the Angular app is served from  | Env var or edit directly |
-| `NAS_STORAGE_ROOT`   | Where files are saved on disk              | Set path in settings     |
-| `MAX_UPLOAD_SIZE_MB` | Max file size (default 500 MB)             | Edit settings            |
-| `ALLOWED_MIME_TYPES` | Allowed file types (images + video)        | Edit settings            |
+| Setting                | What it does                               | How to change            |
+|------------------------|--------------------------------------------|--------------------------|
+| `ALLOWED_HOSTS`        | IPs Django accepts requests from           | Env var or edit directly |
+| `CORS_ALLOWED_ORIGINS` | Origins the Angular app is served from     | Env var or edit directly |
+| `NAS_STORAGE_ROOT`     | Where files are saved on disk              | Set path in settings     |
+| `MAX_UPLOAD_SIZE_MB`   | Max file size (default 500 MB)             | Edit settings            |
+| `ALLOWED_MIME_TYPES`   | Allowed file types (images + video)        | Edit settings            |
 
 **Environment variables (optional, for production):**
 
@@ -229,27 +238,11 @@ One row per uploaded file.  Key fields:
 - `media_type` — `image`, `video`, or `other`
 - `taken_at` — date from EXIF data (if available), otherwise null
 - `device_source` — User-Agent of the uploading device
+- `is_deleted` — soft-delete flag (file stays on disk, hidden from gallery)
+- `deleted_at` — timestamp of when the file was moved to Trash
 
 ### UploadHistory  (`media_manager.UploadHistory`)
 Audit log — every upload attempt (success or failure) is recorded here.
-
----
-
-## Brain Driven Agent Architecture
-
-The `brain/` module is a developer-assistant system built on top of this project.
-It is not part of the NAS functionality itself — it is a meta-layer for code
-maintenance.
-
-- **Brain** — the orchestrator.  All decisions belong here.
-- **Agents** — Analyser, Implementer, Tester, Doc, Refactor.
-  Agents only observe and execute.  They never contain decision logic.
-- **Events** — typed messages (`DevTaskEvent`, `AgentResult`) passed between
-  Brain and agents.
-- **Memory** — `TaskMemory` / `Memory` classes keep context across agent calls
-  within a session.
-
-Rules are documented in `.claude/agent_rules.md`.
 
 ---
 
@@ -270,4 +263,5 @@ cd nas-ui && ng build
 python manage.py shell
 >>> from media_manager.models import MediaFile
 >>> MediaFile.objects.all()
+>>> MediaFile.objects.filter(is_deleted=True)   # items in Trash
 ```
