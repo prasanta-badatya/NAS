@@ -1,9 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+// ── Design tokens ─────────────────────────────────────────────────────────────
+:root {
+  --bg:      #07070e;
+  --s1:      #0e0e1c;
+  --s2:      #14142a;
+  --s3:      #1e1e38;
+
+  --b0:      rgba(255,255,255,0.05);
+  --b1:      rgba(255,255,255,0.09);
+  --b2:      rgba(255,255,255,0.16);
+
+  --a:       #6366f1;
+  --a-h:     #818cf8;
+  --a-dim:   rgba(99,102,241,0.15);
+  --a-glow:  rgba(99,102,241,0.3);
+
+  --ok:      #22c55e;
+  --ok-dim:  rgba(34,197,94,0.15);
+  --warn:    #f59e0b;
+  --err:     #ef4444;
+  --err-dim: rgba(239,68,68,0.15);
+
+  --t1:      #f1f5f9;
+  --t2:      #94a3b8;
+  --t3:      #475569;
+
+  --r-sm:    8px;
+  --r-md:    12px;
+  --r-lg:    16px;
+  --r-xl:    20px;
+
+  --sh1:     0 1px 3px rgba(0,0,0,0.4);
+  --sh2:     0 4px 16px rgba(0,0,0,0.5);
+  --sh3:     0 8px 32px rgba(0,0,0,0.6);
+
+  --ease:    cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html { scroll-behavior: smooth; }
+
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #0f0f0f;
-  color: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--t1);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a { color: inherit; text-decoration: none; }
+
+// ── Scrollbar ─────────────────────────────────────────────────────────────────
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--s3);
+  border-radius: 3px;
+  &:hover { background: var(--b2); }
+}
+
+// ── Icon helper ───────────────────────────────────────────────────────────────
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  svg { width: 18px; height: 18px; display: block; }
+}
