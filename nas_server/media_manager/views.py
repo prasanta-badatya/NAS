@@ -1,10 +1,13 @@
+import io
 import logging
 import mimetypes
 import os
+import zipfile
 
 from django.conf import settings
 from django.db import transaction
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, HttpResponse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from rest_framework.parsers import MultiPartParser
@@ -52,15 +55,13 @@ class UploadView(APIView):
         return Response(results)
 
     def _handle_single(self, user, upload) -> dict:
-        filename = os.path.basename(upload.name)  # strip any path component
+        filename = os.path.basename(upload.name)
 
-        # File size check
         if upload.size > settings.MAX_UPLOAD_SIZE_BYTES:
             logger.warning(f"Upload rejected — too large: {filename} ({upload.size} bytes)")
             return {"filename": filename, "status": "error",
                     "error": f"File exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit."}
 
-        # MIME type check
         mime_type, _ = mimetypes.guess_type(filename)
         mime_type = mime_type or upload.content_type or "application/octet-stream"
         if mime_type not in settings.ALLOWED_MIME_TYPES:
@@ -72,7 +73,6 @@ class UploadView(APIView):
             return {"filename": filename, "status": "error",
                     "error": f"File type '{mime_type}' is not allowed."}
 
-        # Duplicate check
         file_hash = services.compute_hash(upload)
         if MediaFile.objects.filter(file_hash=file_hash).exists():
             logger.info(f"Duplicate upload skipped: {filename}")
@@ -82,7 +82,6 @@ class UploadView(APIView):
             )
             return {"filename": filename, "status": "duplicate"}
 
-        # Save to NAS storage
         dest_path = services.build_storage_path(user.id, filename)
         if not safe_path(dest_path):
             logger.error(f"Path traversal attempt blocked: {dest_path}")
@@ -98,7 +97,6 @@ class UploadView(APIView):
             )
             return {"filename": filename, "status": "error", "error": "Failed to save file."}
 
-        # Thumbnail
         thumbnail_path = ""
         media_type = services.get_media_type(mime_type)
         if media_type == "image":
@@ -106,12 +104,10 @@ class UploadView(APIView):
             if services.create_thumbnail(dest_path, thumb_path):
                 thumbnail_path = thumb_path
 
-        # EXIF date
         taken_at = None
         if media_type == "image":
             taken_at = services.extract_exif_date(dest_path)
 
-        # Persist atomically
         try:
             with transaction.atomic():
                 media_file = MediaFile.objects.create(
@@ -132,7 +128,6 @@ class UploadView(APIView):
 
         except Exception as e:
             logger.error(f"DB error saving {filename}: {e}")
-            # Clean up saved file
             if os.path.exists(dest_path):
                 os.remove(dest_path)
             return {"filename": filename, "status": "error", "error": "Database error."}
@@ -146,10 +141,28 @@ class MediaListView(APIView):
         page_size = min(max(1, int(request.query_params.get("page_size", 50))), 200)
         media_type = request.query_params.get("type")
 
-        qs = MediaFile.objects.filter(user=request.user)
+        # Only show non-deleted items in the main gallery
+        qs = MediaFile.objects.filter(user=request.user, is_deleted=False)
         if media_type in ("image", "video", "other"):
             qs = qs.filter(media_type=media_type)
 
+        total = qs.count()
+        start = (page - 1) * page_size
+        items = qs[start: start + page_size]
+
+        serializer = MediaFileSerializer(items, many=True, context={"request": request})
+        return Response({"total": total, "page": page, "page_size": page_size,
+                         "results": serializer.data})
+
+
+class TrashListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        page = max(1, int(request.query_params.get("page", 1)))
+        page_size = min(max(1, int(request.query_params.get("page_size", 50))), 200)
+
+        qs = MediaFile.objects.filter(user=request.user, is_deleted=True)
         total = qs.count()
         start = (page - 1) * page_size
         items = qs[start: start + page_size]
@@ -164,14 +177,51 @@ class MediaDetailView(APIView):
 
     def get(self, request, pk):
         try:
-            media = MediaFile.objects.get(pk=pk, user=request.user)
+            media = MediaFile.objects.get(pk=pk, user=request.user, is_deleted=False)
         except MediaFile.DoesNotExist:
             raise Http404
         return Response(MediaFileSerializer(media, context={"request": request}).data)
 
     def delete(self, request, pk):
+        """Soft delete — moves to Trash."""
         try:
-            media = MediaFile.objects.get(pk=pk, user=request.user)
+            media = MediaFile.objects.get(pk=pk, user=request.user, is_deleted=False)
+        except MediaFile.DoesNotExist:
+            raise Http404
+
+        media.is_deleted = True
+        media.deleted_at = timezone.now()
+        media.save(update_fields=["is_deleted", "deleted_at"])
+
+        logger.info(f"Soft-deleted media {pk} for {request.user.username}")
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class RestoreView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        """Restore a trashed item back to the gallery."""
+        try:
+            media = MediaFile.objects.get(pk=pk, user=request.user, is_deleted=True)
+        except MediaFile.DoesNotExist:
+            raise Http404
+
+        media.is_deleted = False
+        media.deleted_at = None
+        media.save(update_fields=["is_deleted", "deleted_at"])
+
+        logger.info(f"Restored media {pk} for {request.user.username}")
+        return Response(MediaFileSerializer(media, context={"request": request}).data)
+
+
+class PermanentDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        """Permanently remove file from disk and database."""
+        try:
+            media = MediaFile.objects.get(pk=pk, user=request.user, is_deleted=True)
         except MediaFile.DoesNotExist:
             raise Http404
 
@@ -179,7 +229,7 @@ class MediaDetailView(APIView):
             if not path:
                 continue
             if not safe_path(path):
-                logger.error(f"Path traversal blocked on delete: {path}")
+                logger.error(f"Path traversal blocked on permanent delete: {path}")
                 continue
             try:
                 if os.path.exists(path):
@@ -192,8 +242,32 @@ class MediaDetailView(APIView):
             request.user.save(update_fields=["storage_used"])
             media.delete()
 
-        logger.info(f"Deleted media {pk} for {request.user.username}")
+        logger.info(f"Permanently deleted media {pk} for {request.user.username}")
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BatchDownloadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        ids = request.data.get("ids", [])
+        if not ids or not isinstance(ids, list):
+            return Response({"error": "Provide a list of IDs."}, status=status.HTTP_400_BAD_REQUEST)
+
+        media_files = MediaFile.objects.filter(
+            pk__in=ids, user=request.user, is_deleted=False
+        )
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+            for media in media_files:
+                if safe_path(media.file_path) and os.path.exists(media.file_path):
+                    zf.write(media.file_path, media.filename)
+
+        buffer.seek(0)
+        response = HttpResponse(buffer.read(), content_type="application/zip")
+        response["Content-Disposition"] = 'attachment; filename="photos.zip"'
+        return response
 
 
 class ServeMediaView(APIView):

@@ -18,6 +18,8 @@ class MediaFileSerializer(serializers.ModelSerializer):
             "taken_at",
             "uploaded_at",
             "device_source",
+            "is_deleted",
+            "deleted_at",
             "url",
             "thumbnail_url",
         )

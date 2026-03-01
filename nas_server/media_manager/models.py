@@ -25,6 +25,10 @@ class MediaFile(models.Model):
     uploaded_at = models.DateTimeField(auto_now_add=True)
     device_source = models.CharField(max_length=255, blank=True)
 
+    # Soft-delete (Trash)
+    is_deleted = models.BooleanField(default=False, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ["-uploaded_at"]
 
