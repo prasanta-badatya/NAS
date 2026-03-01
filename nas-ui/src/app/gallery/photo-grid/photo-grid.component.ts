@@ -1,4 +1,5 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { DateGroup, MediaFile } from '../../shared/models/media.model';
 
 @Component({
   selector: 'app-photo-grid',
@@ -6,16 +7,37 @@ import { Component, Input, Output, EventEmitter } from '@angular/core';
   styleUrls: ['./photo-grid.component.scss']
 })
 export class PhotoGridComponent {
-  @Input() photos: any[] = [];
-  @Output() deleted = new EventEmitter<number>();
+  @Input() groups: DateGroup[] = [];
+  @Input() selectMode = false;
+  @Input() selectedIds = new Set<number>();
 
-  lightbox: any = null;
+  @Output() photoClicked    = new EventEmitter<MediaFile>();
+  @Output() longPressed     = new EventEmitter<MediaFile>();
+  @Output() selectionToggled = new EventEmitter<number>();
 
-  open(photo: any) { this.lightbox = photo; }
-  close() { this.lightbox = null; }
+  private pressTimers = new Map<number, ReturnType<typeof setTimeout>>();
 
-  delete(id: number) {
-    this.deleted.emit(id);
-    if (this.lightbox?.id === id) this.lightbox = null;
+  onTileClick(photo: MediaFile) {
+    if (this.selectMode) {
+      this.selectionToggled.emit(photo.id);
+    } else {
+      this.photoClicked.emit(photo);
+    }
+  }
+
+  onTouchStart(photo: MediaFile) {
+    const timer = setTimeout(() => {
+      this.pressTimers.delete(photo.id);
+      this.longPressed.emit(photo);
+    }, 500);
+    this.pressTimers.set(photo.id, timer);
+  }
+
+  onTouchEnd(photo: MediaFile) {
+    const timer = this.pressTimers.get(photo.id);
+    if (timer !== undefined) {
+      clearTimeout(timer);
+      this.pressTimers.delete(photo.id);
+    }
   }
 }

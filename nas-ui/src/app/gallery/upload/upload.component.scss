@@ -1,43 +1,84 @@
 .drop-zone {
-  border: 2px dashed #444;
+  border: 2px dashed #333;
   border-radius: 12px;
-  padding: 2rem;
+  padding: 2rem 1.5rem;
   text-align: center;
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
 
   &.dragging, &:hover {
     border-color: #4f8ef7;
-    background: rgba(79, 142, 247, 0.05);
+    background: rgba(79, 142, 247, 0.06);
   }
 }
 
 .drop-content {
-  .icon { font-size: 2.5rem; }
-  p { color: #aaa; margin: 0.5rem 0 0; }
-  small { font-size: 0.8rem; color: #666; }
+  .icon { font-size: 2.2rem; display: block; margin-bottom: 0.5rem; color: #555; }
+  p { color: #ccc; font-size: 0.95rem; margin-bottom: 0.25rem; }
+  small { color: #555; font-size: 0.8rem; }
 }
 
-.uploading {
-  margin-top: 1rem;
-  color: #4f8ef7;
-  font-size: 0.9rem;
-}
-
-.results {
+// ── Queue ─────────────────────────────────────────────────────────────────────
+.queue {
   margin-top: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 6px;
 }
 
-.result-row {
-  font-size: 0.85rem;
-  color: #4caf50;
-  padding: 0.3rem 0.5rem;
-  border-radius: 6px;
-  background: rgba(76, 175, 80, 0.1);
+.queue-item {
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  border-left: 3px solid #333;
 
-  &.duplicate { color: #ff9800; background: rgba(255, 152, 0, 0.1); }
-  &.error { color: #f44336; background: rgba(244, 67, 54, 0.1); }
+  &.done      { border-color: #27ae60; }
+  &.duplicate { border-color: #f39c12; }
+  &.error     { border-color: #c0392b; }
+  &.uploading { border-color: #4f8ef7; }
+}
+
+.item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-icon { font-size: 0.9rem; flex-shrink: 0; width: 18px; text-align: center; }
+
+.filename {
+  flex: 1;
+  font-size: 0.82rem;
+  color: #ccc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.badge {
+  font-size: 0.72rem;
+  color: #666;
+  flex-shrink: 0;
+}
+
+// ── Progress bar ──────────────────────────────────────────────────────────────
+.progress-track {
+  height: 3px;
+  background: #2a2a2a;
+  border-radius: 2px;
+  margin-top: 0.4rem;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #4f8ef7;
+  border-radius: 2px;
+  transition: width 0.2s ease;
+}
+
+.error-msg {
+  font-size: 0.75rem;
+  color: #e07070;
+  margin-top: 0.25rem;
 }

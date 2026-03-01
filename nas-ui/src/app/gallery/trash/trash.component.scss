@@ -1,0 +1,138 @@
+.trash-shell {
+  min-height: 100vh;
+  background: #0f0f0f;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+.trash-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: #1a1a1a;
+  border-bottom: 1px solid #222;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  h1 {
+    flex: 1;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+  }
+}
+
+.btn-back {
+  background: #2a2a2a;
+  color: #ccc;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  &:hover { background: #333; }
+}
+
+.btn-empty {
+  background: #7b1f1f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 1rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  &:hover { background: #9b2424; }
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+main { padding: 1rem 1.25rem; flex: 1; }
+
+.loading, .empty-state {
+  text-align: center;
+  color: #555;
+  padding: 4rem;
+
+  .empty-icon { font-size: 3rem; display: block; margin-bottom: 0.75rem; }
+}
+
+// ── Grid ──────────────────────────────────────────────────────────────────────
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.card {
+  background: #1a1a1a;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #2a2a2a;
+}
+
+.thumb {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: grayscale(30%);
+  }
+
+  .thumb-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    padding: 0.5rem 0.4rem 0.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .fname {
+    font-size: 0.72rem;
+    color: #ddd;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .fsize { font-size: 0.68rem; color: #888; }
+}
+
+.card-actions {
+  display: flex;
+  gap: 4px;
+  padding: 0.4rem;
+
+  button {
+    flex: 1;
+    border: none;
+    border-radius: 6px;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.78rem;
+    cursor: pointer;
+  }
+}
+
+.btn-restore {
+  background: #1e3a2a;
+  color: #6fcf97;
+  &:hover { background: #275139; }
+}
+
+.btn-perm {
+  flex: 0 0 auto;
+  width: 32px;
+  background: #3a1e1e;
+  color: #e07070;
+  &:hover { background: #5a2a2a; }
+}

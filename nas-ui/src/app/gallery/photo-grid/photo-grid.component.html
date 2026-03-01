@@ -1,24 +1,31 @@
-<div class="grid">
-  <div class="tile" *ngFor="let p of photos" (click)="open(p)">
-    <img [src]="p.thumbnail_url || p.url" [alt]="p.filename" loading="lazy" />
-  </div>
+<div class="empty-state" *ngIf="groups.length === 0">
+  <span class="empty-icon">📷</span>
+  <p>No photos yet — upload some!</p>
 </div>
 
-<div class="empty" *ngIf="photos.length === 0">
-  No photos yet. Upload some!
-</div>
+<div class="date-section" *ngFor="let group of groups">
+  <div class="date-label">{{ group.label }}</div>
 
-<!-- Lightbox -->
-<div class="lightbox" *ngIf="lightbox" (click)="close()">
-  <div class="lb-content" (click)="$event.stopPropagation()">
-    <img [src]="lightbox.url" [alt]="lightbox.filename" />
-    <div class="lb-info">
-      <span>{{ lightbox.filename }}</span>
-      <span class="date">{{ lightbox.uploaded_at | date:'mediumDate' }}</span>
-    </div>
-    <div class="lb-actions">
-      <button class="del" (click)="delete(lightbox.id)">Delete</button>
-      <button (click)="close()">Close</button>
+  <div class="grid">
+    <div
+      class="tile"
+      *ngFor="let photo of group.photos"
+      [class.selected]="selectedIds.has(photo.id)"
+      (click)="onTileClick(photo)"
+      (touchstart)="onTouchStart(photo)"
+      (touchend)="onTouchEnd(photo)"
+    >
+      <img [src]="photo.thumbnail_url || photo.url" [alt]="photo.filename" loading="lazy" />
+
+      <!-- Checkbox overlay in select mode -->
+      <div class="select-overlay" *ngIf="selectMode">
+        <span class="checkbox" [class.checked]="selectedIds.has(photo.id)">
+          {{ selectedIds.has(photo.id) ? '✓' : '' }}
+        </span>
+      </div>
+
+      <!-- Video badge -->
+      <span class="video-badge" *ngIf="photo.media_type === 'video'">▶</span>
     </div>
   </div>
 </div>

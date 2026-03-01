@@ -6,6 +6,7 @@
   flex-direction: column;
 }
 
+// ── Topbar ────────────────────────────────────────────────────────────────
 header {
   display: flex;
   align-items: center;
@@ -28,6 +29,13 @@ header {
 
 .user-info { color: #888; font-size: 0.85rem; }
 
+.nav-link {
+  color: #aaa;
+  font-size: 0.85rem;
+  text-decoration: none;
+  &:hover { color: #fff; }
+}
+
 button {
   border: none;
   border-radius: 8px;
@@ -39,18 +47,90 @@ button {
 .upload-btn { background: #4f8ef7; color: #fff; }
 .logout-btn { background: #2a2a2a; color: #aaa; }
 
+// ── Multi-select toolbar ──────────────────────────────────────────────────
+.select-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1.25rem;
+  background: #1e2a3a;
+  border-bottom: 1px solid #253348;
+  position: sticky;
+  top: 57px;
+  z-index: 99;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.select-count {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4f8ef7;
+}
+
+.select-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sel-btn {
+  background: #253348;
+  color: #ccc;
+  border-radius: 8px;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.82rem;
+  border: 1px solid #2e3f56;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { background: #2e4a6a; color: #fff; }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  &.danger {
+    color: #e07070;
+    border-color: #5a2020;
+    &:hover:not(:disabled) { background: #5a2020; color: #fff; }
+  }
+}
+
+// ── Upload panel ──────────────────────────────────────────────────────────
 .upload-panel {
   padding: 1rem 1.25rem;
   border-bottom: 1px solid #222;
 }
 
+// ── Gallery ───────────────────────────────────────────────────────────────
 main {
   padding: 1rem 1.25rem;
   flex: 1;
 }
 
-.loading {
-  color: #555;
+// ── Infinite scroll ───────────────────────────────────────────────────────
+.sentinel { height: 1px; }
+
+.loading-more {
+  display: flex;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.spinner {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  border: 3px solid #333;
+  border-top-color: #4f8ef7;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.end-msg {
   text-align: center;
-  padding: 4rem;
+  color: #444;
+  font-size: 0.82rem;
+  padding: 2rem 1rem;
 }

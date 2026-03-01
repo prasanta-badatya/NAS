@@ -1,0 +1,45 @@
+<div class="viewer-overlay"
+     (touchstart)="onTouchStart($event)"
+     (touchend)="onTouchEnd($event)">
+
+  <!-- Top bar -->
+  <div class="viewer-topbar">
+    <button class="btn-icon" (click)="close()" title="Close (Esc)">✕</button>
+    <span class="counter">{{ currentIndex + 1 }} / {{ photos.length }}</span>
+    <div class="top-actions">
+      <button class="btn-icon" (click)="toggleInfo()" title="Info (I)">ℹ</button>
+      <button class="btn-icon" (click)="download()" title="Download">⬇</button>
+      <button class="btn-icon btn-delete" (click)="confirmDelete()" title="Move to Trash">🗑</button>
+    </div>
+  </div>
+
+  <!-- Image -->
+  <div class="viewer-stage" (click)="close()">
+    <img [src]="current.url" [alt]="current.filename" (click)="$event.stopPropagation()" />
+  </div>
+
+  <!-- Prev / Next arrows -->
+  <button class="nav-btn nav-prev" *ngIf="hasPrev" (click)="prev()">‹</button>
+  <button class="nav-btn nav-next" *ngIf="hasNext" (click)="next()">›</button>
+
+  <!-- Info panel -->
+  <div class="info-panel" *ngIf="showInfo" (click)="$event.stopPropagation()">
+    <div class="info-row"><span class="label">Filename</span><span>{{ current.filename }}</span></div>
+    <div class="info-row"><span class="label">Size</span><span>{{ formatSize(current.file_size) }}</span></div>
+    <div class="info-row"><span class="label">Type</span><span>{{ current.mime_type }}</span></div>
+    <div class="info-row"><span class="label">Taken</span><span>{{ formatDate(current.taken_at) }}</span></div>
+    <div class="info-row"><span class="label">Uploaded</span><span>{{ formatDate(current.uploaded_at) }}</span></div>
+    <div class="info-row" *ngIf="current.device_source">
+      <span class="label">Device</span><span class="device">{{ current.device_source }}</span>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation -->
+<app-confirm-dialog
+  *ngIf="showConfirm"
+  message="Move this photo to Trash?"
+  confirmLabel="Move to Trash"
+  (confirmed)="softDelete()"
+  (cancelled)="showConfirm = false">
+</app-confirm-dialog>

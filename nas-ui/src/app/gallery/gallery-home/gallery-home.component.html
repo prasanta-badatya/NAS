@@ -1,28 +1,77 @@
 <div class="shell">
-  <!-- Topbar -->
+
+  <!-- ── Topbar ──────────────────────────────────────────────────────────── -->
   <header>
     <span class="brand">📷 Private NAS</span>
+
     <div class="actions">
+      <a class="nav-link" routerLink="trash">🗑 Trash</a>
       <button class="upload-btn" (click)="showUpload = !showUpload">
-        {{ showUpload ? 'Cancel' : '+ Upload' }}
+        {{ showUpload ? '✕ Cancel' : '+ Upload' }}
       </button>
       <span class="user-info" *ngIf="user">{{ user.username }}</span>
       <button class="logout-btn" (click)="logout()">Logout</button>
     </div>
   </header>
 
-  <!-- Upload panel -->
+  <!-- ── Multi-select toolbar ───────────────────────────────────────────── -->
+  <div class="select-toolbar" *ngIf="selectMode">
+    <span class="select-count">{{ selectedIds.size }} selected</span>
+    <div class="select-actions">
+      <button class="sel-btn" (click)="selectAll()">Select All</button>
+      <button class="sel-btn" (click)="downloadSelected()" [disabled]="selectedIds.size === 0">
+        ⬇ Download
+      </button>
+      <button class="sel-btn danger" (click)="deleteSelected()" [disabled]="selectedIds.size === 0">
+        🗑 Delete
+      </button>
+      <button class="sel-btn" (click)="clearSelection()">✕ Cancel</button>
+    </div>
+  </div>
+
+  <!-- ── Upload panel ───────────────────────────────────────────────────── -->
   <div class="upload-panel" *ngIf="showUpload">
     <app-upload (uploaded)="onUploaded()"></app-upload>
   </div>
 
-  <!-- Gallery -->
+  <!-- ── Gallery ────────────────────────────────────────────────────────── -->
   <main>
-    <div class="loading" *ngIf="loading">Loading photos…</div>
     <app-photo-grid
-      *ngIf="!loading"
-      [photos]="photos"
-      (deleted)="onDeleted($event)"
+      [groups]="groups"
+      [selectMode]="selectMode"
+      [selectedIds]="selectedIds"
+      (photoClicked)="openPhoto($event)"
+      (longPressed)="onLongPress($event)"
+      (selectionToggled)="toggleSelect($event)"
     ></app-photo-grid>
+
+    <!-- Infinite scroll sentinel -->
+    <div id="scroll-sentinel" class="sentinel"></div>
+
+    <div class="loading-more" *ngIf="loading">
+      <span class="spinner"></span>
+    </div>
+
+    <div class="end-msg" *ngIf="!hasMore && allPhotos.length > 0">
+      All {{ allPhotos.length }} photos loaded
+    </div>
   </main>
+
+  <!-- ── Fullscreen viewer ──────────────────────────────────────────────── -->
+  <app-viewer
+    *ngIf="viewerOpen"
+    [photos]="allPhotos"
+    [startIndex]="viewerIndex"
+    (closed)="onViewerClosed()"
+    (deleted)="onViewerDeleted($event)"
+  ></app-viewer>
+
+  <!-- ── Confirm dialog ─────────────────────────────────────────────────── -->
+  <app-confirm-dialog
+    *ngIf="confirmCallback"
+    [message]="confirmMessage"
+    (confirmed)="onConfirm()"
+    (cancelled)="onCancel()"
+  ></app-confirm-dialog>
+
 </div>

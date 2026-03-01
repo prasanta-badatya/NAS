@@ -1,0 +1,44 @@
+<div class="trash-shell">
+
+  <header class="trash-header">
+    <button class="btn-back" (click)="goBack()">← Back</button>
+    <h1>Trash</h1>
+    <button class="btn-empty" *ngIf="items.length" (click)="promptEmptyTrash()">
+      Empty Trash
+    </button>
+  </header>
+
+  <main>
+    <div class="loading" *ngIf="loading">Loading trash…</div>
+
+    <div class="empty-state" *ngIf="!loading && items.length === 0">
+      <span class="empty-icon">🗑</span>
+      <p>Trash is empty</p>
+    </div>
+
+    <div class="grid" *ngIf="!loading && items.length">
+      <div class="card" *ngFor="let item of items">
+        <div class="thumb">
+          <img [src]="item.thumbnail_url || item.url" [alt]="item.filename" loading="lazy" />
+          <div class="thumb-overlay">
+            <span class="fname">{{ item.filename }}</span>
+            <span class="fsize">{{ formatSize(item.file_size) }}</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="btn-restore" (click)="restore(item.id)" title="Restore">↩ Restore</button>
+          <button class="btn-perm" (click)="promptPermanentDelete(item.id)" title="Delete forever">✕</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+</div>
+
+<app-confirm-dialog
+  *ngIf="confirmCallback"
+  [message]="confirmMessage"
+  confirmLabel="Delete Forever"
+  (confirmed)="onConfirm()"
+  (cancelled)="onCancel()">
+</app-confirm-dialog>
