@@ -1,5 +1,14 @@
-Django>=5.2
-djangorestframework>=3.15
-django-cors-headers>=4.3
-Pillow>=10.0
-python-magic>=0.4.27
+# Core framework
+Django==5.2.11
+djangorestframework==3.16.1
+
+# CORS headers (allows Angular dev server to call the API)
+django-cors-headers==4.9.0
+
+# Image processing — thumbnails and EXIF date extraction
+Pillow==12.1.1
+
+# Django internal dependencies (pinned for reproducibility)
+asgiref==3.11.1
+sqlparse==0.5.3
+tzdata==2025.2
