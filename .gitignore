@@ -1,0 +1,44 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Django
+db.sqlite3
+*.log
+local_settings.py
+.env
+
+# NAS storage (user files - never commit)
+NAS_STORAGE/
+media/
+
+# Node / Angular
+nas-ui/node_modules/
+nas-ui/dist/
+nas-ui/.angular/
+nas-ui/.sass-cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Test/coverage
+.coverage
+htmlcov/
+.pytest_cache/
