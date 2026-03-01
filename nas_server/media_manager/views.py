@@ -1,0 +1,247 @@
+import logging
+import mimetypes
+import os
+
+from django.conf import settings
+from django.db import transaction
+from django.http import FileResponse, Http404
+from rest_framework import status
+from rest_framework.authtoken.models import Token
+from rest_framework.parsers import MultiPartParser
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from . import services
+from .models import MediaFile, UploadHistory
+from .serializers import MediaFileSerializer, UploadHistorySerializer
+
+logger = logging.getLogger(__name__)
+
+
+def get_user_from_request(request):
+    """Auth via header token OR ?token= query param (required for <img src> tags)."""
+    if request.user and request.user.is_authenticated:
+        return request.user
+    token_key = request.query_params.get("token")
+    if token_key:
+        try:
+            return Token.objects.get(key=token_key).user
+        except Token.DoesNotExist:
+            pass
+    return None
+
+
+def safe_path(path: str) -> bool:
+    """Return True only if path is inside NAS_STORAGE_ROOT (prevents path traversal)."""
+    real = os.path.realpath(path)
+    root = os.path.realpath(settings.NAS_STORAGE_ROOT)
+    return real.startswith(root + os.sep) or real == root
+
+
+class UploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser]
+
+    def post(self, request):
+        files = request.FILES.getlist("files")
+        if not files:
+            return Response({"error": "No files provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        results = [self._handle_single(request.user, f) for f in files]
+        return Response(results)
+
+    def _handle_single(self, user, upload) -> dict:
+        filename = os.path.basename(upload.name)  # strip any path component
+
+        # File size check
+        if upload.size > settings.MAX_UPLOAD_SIZE_BYTES:
+            logger.warning(f"Upload rejected — too large: {filename} ({upload.size} bytes)")
+            return {"filename": filename, "status": "error",
+                    "error": f"File exceeds {settings.MAX_UPLOAD_SIZE_MB} MB limit."}
+
+        # MIME type check
+        mime_type, _ = mimetypes.guess_type(filename)
+        mime_type = mime_type or upload.content_type or "application/octet-stream"
+        if mime_type not in settings.ALLOWED_MIME_TYPES:
+            logger.warning(f"Upload rejected — disallowed type: {filename} ({mime_type})")
+            UploadHistory.objects.create(
+                user=user, filename=filename, success=False,
+                error_message=f"File type not allowed: {mime_type}"
+            )
+            return {"filename": filename, "status": "error",
+                    "error": f"File type '{mime_type}' is not allowed."}
+
+        # Duplicate check
+        file_hash = services.compute_hash(upload)
+        if MediaFile.objects.filter(file_hash=file_hash).exists():
+            logger.info(f"Duplicate upload skipped: {filename}")
+            UploadHistory.objects.create(
+                user=user, filename=filename, file_hash=file_hash,
+                success=False, error_message="Duplicate file."
+            )
+            return {"filename": filename, "status": "duplicate"}
+
+        # Save to NAS storage
+        dest_path = services.build_storage_path(user.id, filename)
+        if not safe_path(dest_path):
+            logger.error(f"Path traversal attempt blocked: {dest_path}")
+            return {"filename": filename, "status": "error", "error": "Invalid file path."}
+
+        try:
+            file_size = services.save_file(upload, dest_path)
+        except Exception as e:
+            logger.error(f"Failed to save file {filename}: {e}")
+            UploadHistory.objects.create(
+                user=user, filename=filename, file_hash=file_hash,
+                success=False, error_message=str(e)
+            )
+            return {"filename": filename, "status": "error", "error": "Failed to save file."}
+
+        # Thumbnail
+        thumbnail_path = ""
+        media_type = services.get_media_type(mime_type)
+        if media_type == "image":
+            thumb_path = services.build_thumbnail_path(user.id, filename)
+            if services.create_thumbnail(dest_path, thumb_path):
+                thumbnail_path = thumb_path
+
+        # EXIF date
+        taken_at = None
+        if media_type == "image":
+            taken_at = services.extract_exif_date(dest_path)
+
+        # Persist atomically
+        try:
+            with transaction.atomic():
+                media_file = MediaFile.objects.create(
+                    user=user, filename=filename, file_path=dest_path,
+                    thumbnail_path=thumbnail_path, file_hash=file_hash,
+                    file_size=file_size, media_type=media_type,
+                    mime_type=mime_type, taken_at=taken_at,
+                    device_source=self.request.META.get("HTTP_USER_AGENT", "")[:255],
+                )
+                user.storage_used = (user.storage_used or 0) + file_size
+                user.save(update_fields=["storage_used"])
+
+            UploadHistory.objects.create(
+                user=user, filename=filename, file_hash=file_hash, success=True
+            )
+            logger.info(f"Uploaded: {filename} ({file_size} bytes) for {user.username}")
+            return {"filename": filename, "status": "uploaded", "id": media_file.pk}
+
+        except Exception as e:
+            logger.error(f"DB error saving {filename}: {e}")
+            # Clean up saved file
+            if os.path.exists(dest_path):
+                os.remove(dest_path)
+            return {"filename": filename, "status": "error", "error": "Database error."}
+
+
+class MediaListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        page = max(1, int(request.query_params.get("page", 1)))
+        page_size = min(max(1, int(request.query_params.get("page_size", 50))), 200)
+        media_type = request.query_params.get("type")
+
+        qs = MediaFile.objects.filter(user=request.user)
+        if media_type in ("image", "video", "other"):
+            qs = qs.filter(media_type=media_type)
+
+        total = qs.count()
+        start = (page - 1) * page_size
+        items = qs[start: start + page_size]
+
+        serializer = MediaFileSerializer(items, many=True, context={"request": request})
+        return Response({"total": total, "page": page, "page_size": page_size,
+                         "results": serializer.data})
+
+
+class MediaDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            media = MediaFile.objects.get(pk=pk, user=request.user)
+        except MediaFile.DoesNotExist:
+            raise Http404
+        return Response(MediaFileSerializer(media, context={"request": request}).data)
+
+    def delete(self, request, pk):
+        try:
+            media = MediaFile.objects.get(pk=pk, user=request.user)
+        except MediaFile.DoesNotExist:
+            raise Http404
+
+        for path in [media.file_path, media.thumbnail_path]:
+            if not path:
+                continue
+            if not safe_path(path):
+                logger.error(f"Path traversal blocked on delete: {path}")
+                continue
+            try:
+                if os.path.exists(path):
+                    os.remove(path)
+            except OSError as e:
+                logger.warning(f"Could not delete file {path}: {e}")
+
+        with transaction.atomic():
+            request.user.storage_used = max(0, (request.user.storage_used or 0) - media.file_size)
+            request.user.save(update_fields=["storage_used"])
+            media.delete()
+
+        logger.info(f"Deleted media {pk} for {request.user.username}")
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ServeMediaView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, pk):
+        user = get_user_from_request(request)
+        if not user:
+            raise Http404
+
+        try:
+            media = MediaFile.objects.get(pk=pk, user=user)
+        except MediaFile.DoesNotExist:
+            raise Http404
+
+        if not safe_path(media.file_path) or not os.path.exists(media.file_path):
+            raise Http404
+
+        return FileResponse(
+            open(media.file_path, "rb"),
+            content_type=media.mime_type or "application/octet-stream",
+        )
+
+
+class ServeThumbnailView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, pk):
+        user = get_user_from_request(request)
+        if not user:
+            raise Http404
+
+        try:
+            media = MediaFile.objects.get(pk=pk, user=user)
+        except MediaFile.DoesNotExist:
+            raise Http404
+
+        if not media.thumbnail_path or not safe_path(media.thumbnail_path) \
+                or not os.path.exists(media.thumbnail_path):
+            raise Http404
+
+        return FileResponse(open(media.thumbnail_path, "rb"), content_type="image/jpeg")
+
+
+class UploadHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        page_size = min(int(request.query_params.get("page_size", 50)), 100)
+        history = UploadHistory.objects.filter(user=request.user)[:page_size]
+        return Response(UploadHistorySerializer(history, many=True).data)
