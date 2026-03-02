@@ -72,16 +72,10 @@
   &:hover img { transform: scale(1.06); }
 
   &.selected {
-    outline: 2px solid var(--a);
+    outline: 2.5px solid var(--a);
     outline-offset: -2px;
 
-    img { filter: brightness(0.55); }
-
-    .checkbox {
-      background: var(--a);
-      border-color: var(--a);
-      box-shadow: 0 0 0 2px var(--a-dim);
-    }
+    img { filter: brightness(0.5); }
   }
 }
 
@@ -99,14 +93,31 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.6);
-  background: rgba(0,0,0,0.35);
+  border: 2px solid rgba(255,255,255,0.5);
+  background: rgba(0,0,0,0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+  transition: opacity 0.15s var(--ease), background 0.15s var(--ease), border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
   color: #fff;
+
+  // Hidden by default
+  opacity: 0;
+
+  // Checked state — indigo fill
+  &.checked {
+    background: var(--a);
+    border-color: var(--a);
+    box-shadow: 0 0 0 2px var(--a-dim);
+    opacity: 1;
+  }
 }
+
+// Show hint circle on hover (even outside select mode)
+.tile:hover .checkbox { opacity: 0.65; }
+
+// In select mode — always show all checkboxes
+.select-mode .tile .checkbox { opacity: 1; }
 
 // ── Video badge ───────────────────────────────────────────────────────────────
 .video-badge {

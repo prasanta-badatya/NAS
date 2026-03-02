@@ -13,6 +13,16 @@
     </div>
 
     <nav class="topbar-nav">
+      <button class="btn-select" *ngIf="!selectMode && allPhotos.length > 0" (click)="enterSelectMode()">
+        <span class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="9" r="2"/><circle cx="15" cy="9" r="2"/>
+            <circle cx="9" cy="15" r="2"/><circle cx="15" cy="15" r="2"/>
+          </svg>
+        </span>
+        Select
+      </button>
+
       <a class="nav-item" routerLink="trash">
         <span class="icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
@@ -114,6 +124,7 @@
       (photoClicked)="openPhoto($event)"
       (longPressed)="onLongPress($event)"
       (selectionToggled)="toggleSelect($event)"
+      (rangeSelected)="onRangeSelect($event)"
     ></app-photo-grid>
 
     <div id="scroll-sentinel" class="sentinel"></div>

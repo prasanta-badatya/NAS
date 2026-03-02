@@ -73,6 +73,30 @@
   }
 }
 
+.btn-select {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem;
+  background: transparent;
+  border: 1px solid var(--b1);
+  border-radius: var(--r-sm);
+  color: var(--t2);
+  font-size: 0.85rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s var(--ease);
+
+  .icon { color: var(--t3); svg { width: 14px; height: 14px; } }
+  &:hover {
+    background: var(--s2);
+    border-color: var(--b2);
+    color: var(--t1);
+    .icon { color: var(--t2); }
+  }
+}
+
 .btn-upload {
   display: flex;
   align-items: center;

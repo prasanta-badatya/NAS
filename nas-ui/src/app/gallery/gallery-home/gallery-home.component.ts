@@ -130,23 +130,36 @@ export class GalleryHomeComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   // ── Multi-select ─────────────────────────────────────────────────────────────
+  enterSelectMode() {
+    this.selectMode = true;
+  }
+
   onLongPress(photo: MediaFile) {
     this.selectMode = true;
-    this.selectedIds.add(photo.id);
+    this.selectedIds = new Set([photo.id]);
   }
 
   toggleSelect(id: number) {
-    if (this.selectedIds.has(id)) this.selectedIds.delete(id);
-    else this.selectedIds.add(id);
+    const next = new Set(this.selectedIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.selectedIds = next;
     if (this.selectedIds.size === 0) this.selectMode = false;
   }
 
   selectAll() {
-    this.allPhotos.forEach(p => this.selectedIds.add(p.id));
+    this.selectedIds = new Set(this.allPhotos.map(p => p.id));
+  }
+
+  onRangeSelect(ids: number[]) {
+    const next = new Set(this.selectedIds);
+    ids.forEach(id => next.add(id));
+    this.selectedIds = next;
+    this.selectMode = true;
   }
 
   clearSelection() {
-    this.selectedIds.clear();
+    this.selectedIds = new Set();
     this.selectMode = false;
   }
 
@@ -158,7 +171,8 @@ export class GalleryHomeComponent implements OnInit, AfterViewInit, OnDestroy {
       const calls = ids.map(id => this.api.deleteMedia(id));
       forkJoin(calls).subscribe(() => {
         ids.forEach(id => this.removePhoto(id));
-        this.clearSelection();
+        this.selectedIds = new Set();
+        this.selectMode = false;
         this.confirmCallback = null;
       });
     };
