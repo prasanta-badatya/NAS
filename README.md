@@ -12,12 +12,13 @@ Google Photos that never leaves your house.
 - Upload photos and videos from your phone or laptop via a browser
 - Browse your gallery with thumbnails, infinite scroll, and date grouping (Today / Yesterday / Month / Year)
 - Fullscreen viewer with swipe navigation (mobile) and keyboard shortcuts (desktop)
-- Multi-select mode — long-press a photo on mobile, or enter select mode to bulk-delete or bulk-download as ZIP
+- Multi-select mode — long-press (mobile), right-click, Ctrl+Click, or Shift+Click range (desktop) to bulk-delete or bulk-download as ZIP
 - Soft-delete with Trash — deleted photos move to Trash and can be restored or permanently removed
 - Per-file upload progress bars with duplicate detection
 - Every file is deduplicated by SHA-256 hash (same photo won't be stored twice)
 - Thumbnails are generated automatically on upload
 - Works on LAN — phone and PC must be on the same Wi-Fi
+- Secure SPA navigation — browser Back never exposes the login page to authenticated users
 
 ---
 
