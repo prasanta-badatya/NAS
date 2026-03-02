@@ -80,6 +80,7 @@
   overflow: hidden;
   cursor: zoom-out;
 
+  // Images — click anywhere to close
   img {
     max-width: 100%;
     max-height: 100vh;
@@ -88,6 +89,19 @@
     border-radius: 2px;
     animation: fadeIn 0.2s var(--ease);
   }
+
+  // Videos — native controls, no zoom-out cursor on the stage
+  video {
+    max-width: 100%;
+    max-height: 100vh;
+    object-fit: contain;
+    border-radius: 2px;
+    animation: fadeIn 0.2s var(--ease);
+    cursor: default;
+    outline: none;
+  }
+
+  &.is-video { cursor: default; }
 }
 
 @keyframes fadeIn {

@@ -37,9 +37,22 @@
     </div>
   </div>
 
-  <!-- ── Image stage ──────────────────────────────────────────────────────── -->
-  <div class="viewer-stage" (click)="close()">
-    <img [src]="current.url" [alt]="current.filename" (click)="$event.stopPropagation()" />
+  <!-- ── Media stage ──────────────────────────────────────────────────────── -->
+  <div class="viewer-stage" [class.is-video]="isVideo" (click)="close()">
+    <img
+      *ngIf="!isVideo"
+      [src]="current.url"
+      [alt]="current.filename"
+      (click)="$event.stopPropagation()" />
+
+    <video
+      *ngIf="isVideo"
+      #videoPlayer
+      [src]="current.url"
+      controls
+      playsinline
+      (click)="$event.stopPropagation()">
+    </video>
   </div>
 
   <!-- ── Nav arrows ───────────────────────────────────────────────────────── -->
@@ -71,7 +84,7 @@
 <!-- ── Delete confirmation ─────────────────────────────────────────────────── -->
 <app-confirm-dialog
   *ngIf="showConfirm"
-  message="Move this photo to Trash?"
+  [message]="'Move this ' + (isVideo ? 'video' : 'photo') + ' to Trash?'"
   confirmLabel="Move to Trash"
   (confirmed)="softDelete()"
   (cancelled)="showConfirm = false">
