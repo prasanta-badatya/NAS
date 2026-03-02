@@ -67,57 +67,84 @@ def create_thumbnail(source_path: str, thumb_path: str, size=(400, 400)) -> bool
         return False
 
 
+def _frame_brightness(img) -> float:
+    """Return mean pixel brightness (0-255) of a PIL image."""
+    import numpy as np
+    return float(np.array(img.convert("L")).mean())
+
+
 def create_video_thumbnail(source_path: str, thumb_path: str, size=(400, 400)) -> bool:
     """
-    Extract a representative frame from a video and save as JPEG thumbnail.
+    Extract a bright, representative frame and save as JPEG thumbnail.
 
     Strategy:
-      1. Try ffmpeg via subprocess (no Python dep, widely available).
-      2. Fall back to opencv-python if ffmpeg is not on PATH.
+      1. opencv-python: sample at 10 %, 20 %, 30 %, 50 % through the video,
+         pick the brightest non-black frame.
+      2. ffmpeg fallback: -ss placed AFTER -i for accurate seeking; tries
+         1 s, 3 s, 10 s stops in order.
 
     Returns True if a thumbnail was written successfully.
     """
     os.makedirs(os.path.dirname(thumb_path), exist_ok=True)
 
-    # ── Attempt 1: ffmpeg ────────────────────────────────────────────────────
-    try:
-        result = subprocess.run(
-            [
-                "ffmpeg", "-y",
-                "-ss", "00:00:03",          # seek 3 s in (avoids black opening frames)
-                "-i", source_path,
-                "-vframes", "1",
-                "-vf", f"scale='min({size[0]},iw)':'min({size[1]},ih)':force_original_aspect_ratio=decrease",
-                thumb_path,
-            ],
-            capture_output=True,
-            timeout=60,
-        )
-        if result.returncode == 0 and os.path.exists(thumb_path):
-            return True
-    except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
-        pass
-
-    # ── Attempt 2: opencv-python ─────────────────────────────────────────────
+    # ── Attempt 1: opencv-python (accurate frame access) ─────────────────────
     try:
         import cv2
         from PIL import Image
 
         cap = cv2.VideoCapture(source_path)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        fps = cap.get(cv2.CAP_PROP_FPS) or 30
-        # Target: 3 s in, but no more than 10 % into the video
-        target_frame = min(int(fps * 3), max(0, int(total_frames * 0.1)))
-        cap.set(cv2.CAP_PROP_POS_FRAMES, target_frame)
-        ret, frame = cap.read()
+
+        best_img = None
+        best_brightness = -1.0
+
+        # Sample at 10 %, 20 %, 30 %, 50 % — pick brightest frame
+        for pct in (0.10, 0.20, 0.30, 0.50):
+            frame_idx = max(0, int(total_frames * pct))
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+            ret, frame = cap.read()
+            if not ret:
+                continue
+            img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+            brightness = _frame_brightness(img)
+            if brightness > best_brightness:
+                best_brightness = brightness
+                best_img = img
+
         cap.release()
 
-        if ret:
-            img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-            img.thumbnail(size, Image.LANCZOS)
-            img.save(thumb_path, "JPEG", quality=85)
+        if best_img is not None and best_brightness > 15:   # discard near-black frames
+            best_img.thumbnail(size, Image.LANCZOS)
+            best_img.save(thumb_path, "JPEG", quality=85)
             return True
     except Exception:
+        pass
+
+    # ── Attempt 2: ffmpeg (-ss after -i = accurate seek) ─────────────────────
+    try:
+        for seek in ("1", "3", "10"):
+            result = subprocess.run(
+                [
+                    "ffmpeg", "-y",
+                    "-i", source_path,
+                    "-ss", seek,
+                    "-vframes", "1",
+                    "-vf", f"scale={size[0]}:{size[1]}:force_original_aspect_ratio=decrease",
+                    thumb_path,
+                ],
+                capture_output=True,
+                timeout=60,
+            )
+            if result.returncode == 0 and os.path.exists(thumb_path):
+                # Validate the frame is not black
+                try:
+                    from PIL import Image
+                    with Image.open(thumb_path) as img:
+                        if _frame_brightness(img) > 15:
+                            return True
+                except Exception:
+                    return True  # Can't check, accept it
+    except (FileNotFoundError, subprocess.TimeoutExpired, Exception):
         pass
 
     return False
