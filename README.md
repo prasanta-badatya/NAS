@@ -16,7 +16,9 @@ Google Photos that never leaves your house.
 - Soft-delete with Trash — deleted photos move to Trash and can be restored or permanently removed
 - Per-file upload progress bars with duplicate detection
 - Every file is deduplicated by SHA-256 hash (same photo won't be stored twice)
-- Thumbnails are generated automatically on upload
+- Thumbnails are generated automatically on upload (images via Pillow; videos via ffmpeg or opencv-python)
+- Videos stream with HTTP Range support — seek instantly without buffering the whole file
+- Video playback inside the fullscreen viewer with native browser controls
 - Works on LAN — phone and PC must be on the same Wi-Fi
 - Secure SPA navigation — browser Back never exposes the login page to authenticated users
 
@@ -26,7 +28,7 @@ Google Photos that never leaves your house.
 
 | Layer    | Technology                        |
 |----------|-----------------------------------|
-| Backend  | Python 3.11 + Django 5 + DRF      |
+| Backend  | Python 3.11 + Django 5 + DRF + Pillow + opencv-python |
 | Frontend | Angular 16 (TypeScript)           |
 | Database | SQLite (local, single file)       |
 | Storage  | Local filesystem (`NAS_STORAGE/`) |
