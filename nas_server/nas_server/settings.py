@@ -18,7 +18,7 @@ DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 #   DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,192.168.x.x
 ALLOWED_HOSTS = os.environ.get(
     "DJANGO_ALLOWED_HOSTS",
-    "localhost,127.0.0.1"
+    "localhost,127.0.0.1,192.168.1.35"
 ).split(",")
 
 # ── Applications ───────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ REST_FRAMEWORK = {
 #   CORS_ALLOWED_ORIGINS=http://localhost:4200,http://192.168.x.x:4200
 CORS_ALLOWED_ORIGINS = os.environ.get(
     "CORS_ALLOWED_ORIGINS",
-    "http://localhost:4200"
+    "http://localhost:4200,http://192.168.1.35:4200"
 ).split(",")
 
 # ── Upload limits ──────────────────────────────────────────────────────────
