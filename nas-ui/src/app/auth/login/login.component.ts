@@ -23,7 +23,7 @@ export class LoginComponent {
     this.loading = true;
     this.error = '';
     this.auth.login(this.username.trim(), this.password).subscribe({
-      next: () => this.router.navigate(['/gallery']),
+      next: () => this.router.navigate(['/gallery'], { replaceUrl: true }),
       error: (err: any) => {
         if (err.status === 0) {
           this.error = 'Cannot reach server. Check your connection.';
