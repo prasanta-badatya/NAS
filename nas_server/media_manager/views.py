@@ -6,7 +6,7 @@ import zipfile
 
 from django.conf import settings
 from django.db import transaction
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse, StreamingHttpResponse
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.authtoken.models import Token
@@ -73,6 +73,8 @@ class UploadView(APIView):
             return {"filename": filename, "status": "error",
                     "error": f"File type '{mime_type}' is not allowed."}
 
+        media_type = services.get_media_type(mime_type)
+
         file_hash = services.compute_hash(upload)
         if MediaFile.objects.filter(file_hash=file_hash).exists():
             logger.info(f"Duplicate upload skipped: {filename}")
@@ -82,7 +84,7 @@ class UploadView(APIView):
             )
             return {"filename": filename, "status": "duplicate"}
 
-        dest_path = services.build_storage_path(user.id, filename)
+        dest_path = services.build_storage_path(user.id, filename, media_type)
         if not safe_path(dest_path):
             logger.error(f"Path traversal attempt blocked: {dest_path}")
             return {"filename": filename, "status": "error", "error": "Invalid file path."}
@@ -98,10 +100,12 @@ class UploadView(APIView):
             return {"filename": filename, "status": "error", "error": "Failed to save file."}
 
         thumbnail_path = ""
-        media_type = services.get_media_type(mime_type)
+        thumb_path = services.build_thumbnail_path(user.id, filename)
         if media_type == "image":
-            thumb_path = services.build_thumbnail_path(user.id, filename)
             if services.create_thumbnail(dest_path, thumb_path):
+                thumbnail_path = thumb_path
+        elif media_type == "video":
+            if services.create_video_thumbnail(dest_path, thumb_path):
                 thumbnail_path = thumb_path
 
         taken_at = None
@@ -271,6 +275,10 @@ class BatchDownloadView(APIView):
 
 
 class ServeMediaView(APIView):
+    """
+    Serve a media file. Supports HTTP Range requests so browsers can
+    seek within videos without downloading the whole file first.
+    """
     permission_classes = [AllowAny]
 
     def get(self, request, pk):
@@ -286,10 +294,42 @@ class ServeMediaView(APIView):
         if not safe_path(media.file_path) or not os.path.exists(media.file_path):
             raise Http404
 
-        return FileResponse(
-            open(media.file_path, "rb"),
-            content_type=media.mime_type or "application/octet-stream",
-        )
+        file_path = media.file_path
+        file_size = os.path.getsize(file_path)
+        content_type = media.mime_type or "application/octet-stream"
+
+        range_header = request.META.get("HTTP_RANGE", "").strip()
+        if range_header.startswith("bytes="):
+            # Parse "bytes=<start>-<end>"
+            range_spec = range_header[6:]
+            start_str, _, end_str = range_spec.partition("-")
+            start = int(start_str) if start_str else 0
+            end = int(end_str) if end_str else file_size - 1
+            end = min(end, file_size - 1)
+            length = end - start + 1
+
+            def _stream():
+                remaining = length
+                with open(file_path, "rb") as f:
+                    f.seek(start)
+                    while remaining > 0:
+                        chunk = f.read(min(65536, remaining))
+                        if not chunk:
+                            break
+                        remaining -= len(chunk)
+                        yield chunk
+
+            response = StreamingHttpResponse(_stream(), status=206, content_type=content_type)
+            response["Content-Range"] = f"bytes {start}-{end}/{file_size}"
+            response["Accept-Ranges"] = "bytes"
+            response["Content-Length"] = str(length)
+            return response
+
+        # Full file — still advertise range support so browser knows it can seek
+        response = FileResponse(open(file_path, "rb"), content_type=content_type)
+        response["Accept-Ranges"] = "bytes"
+        response["Content-Length"] = str(file_size)
+        return response
 
 
 class ServeThumbnailView(APIView):

@@ -69,6 +69,10 @@ CORS_ALLOWED_ORIGINS = os.environ.get(
 MAX_UPLOAD_SIZE_MB = 500
 MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 
+# Write uploads > 10 MB straight to a temp file instead of holding in RAM.
+# This allows large video uploads without exhausting server memory.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024   # 10 MB
+
 ALLOWED_MIME_TYPES = {
     "image/jpeg", "image/png", "image/gif",
     "image/webp", "image/heic", "image/heif",

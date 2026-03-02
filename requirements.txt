@@ -8,6 +8,10 @@ django-cors-headers==4.9.0
 # Image processing — thumbnails and EXIF date extraction
 Pillow==12.1.1
 
+# Video thumbnail extraction (frame grab). ffmpeg is tried first via subprocess;
+# opencv-python is the Python fallback if ffmpeg is not on PATH.
+opencv-python==4.11.0.86
+
 # Django internal dependencies (pinned for reproducibility)
 asgiref==3.11.1
 sqlparse==0.5.3
