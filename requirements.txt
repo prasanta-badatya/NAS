@@ -1,5 +1,10 @@
 # Core framework
 Django==5.2.11
+
+# Production serving — Windows-compatible WSGI server + static files
+waitress==3.0.2
+whitenoise==6.9.0
+python-dotenv==1.1.0
 djangorestframework==3.16.1
 
 # CORS headers (allows Angular dev server to call the API)
