@@ -16,7 +16,7 @@ ALLOWED_HOSTS = os.environ.get(
     "localhost,127.0.0.1,192.168.1.35,nas-unb0.onrender.com"
 ).split(",")
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "False"
 
 # Add your PC's LAN IP via the env var, e.g.:
 #   DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,192.168.x.x
