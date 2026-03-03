@@ -1,22 +1,22 @@
 import os
 from pathlib import Path
-# from dotenv import load_dotenv
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Load .env from the repo root (one level above nas_server/)
-# load_dotenv(BASE_DIR.parent / '.env')
+load_dotenv(BASE_DIR.parent / '.env', override=True)
 
 # NAS local storage root
 NAS_STORAGE_ROOT = os.path.join(BASE_DIR, "NAS_STORAGE")
 
 # ── Security ───────────────────────────────────────────────────────────────
-ALLOWED_HOSTS = os.environ.get(
-    "DJANGO_ALLOWED_HOSTS",
-    "localhost,127.0.0.1,192.168.1.35,nas-unb0.onrender.com"
-).split(",")
+SECRET_KEY = os.environ.get(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-local-dev-only-change-before-any-real-deployment"
+)
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "False"
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
 # Add your PC's LAN IP via the env var, e.g.:
 #   DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,192.168.x.x
