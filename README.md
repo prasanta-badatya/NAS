@@ -56,6 +56,7 @@ NAS/
 │       └── core/        # ApiService, AuthService, auth guard
 ├── agents/              # Standalone agent scripts
 │   └── designer_agent.py  # UI/UX redesign agent (Anthropic SDK)
+├── render.yaml          # Render.com deployment config (auto build + start)
 ├── start_server.bat     # Launch Waitress backend (Windows, production)
 ├── .env.example         # Environment variable template (copy → .env)
 ├── requirements.txt     # Python dependencies
